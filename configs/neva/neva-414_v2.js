@@ -99,9 +99,12 @@ const NEVA_414_v2_CONFIG = {
 
 // Для обратной совместимости
 if (typeof window !== 'undefined') {
-    window.NEVA_414_CONFIG = NEVA_414_CONFIG;
+    // Основное имя
+    window.NEVA_414_v2_CONFIG = NEVA_414_v2_CONFIG;
+    // Для обратной совместимости старые импорты могли ожидать другое имя
+    window.NEVA_414_CONFIG = NEVA_414_v2_CONFIG;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = NEVA_414_CONFIG;
+    module.exports = NEVA_414_v2_CONFIG;
 }

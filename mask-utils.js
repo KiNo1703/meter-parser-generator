@@ -123,9 +123,9 @@ function generateObjectMappingTable(dataMapping, values) {
         let valueDisplay = '';
         
         if (value && typeof value.value === 'number') {
-            // Форматируем значение в кВт
+            // Форматируем значение в Вт
             const kw = value.value / 1000;
-            valueDisplay = `<strong style="color: #0d47a1; font-size: 16px;">${kw.toLocaleString('ru-RU')} кВт</strong>`;
+            valueDisplay = `<strong style="color: #0d47a1; font-size: 16px;">${kw.toLocaleString('ru-RU')} Вт</strong>`;
         } else if (value) {
             valueDisplay = `<span style="color: #666;">${value.value}</span>`;
         }
@@ -201,7 +201,7 @@ function findModelByMask(maskHex, configs) {
 /**
  * Форматирует значение для отображения
  * @param {number} value - Значение в Ватах
- * @returns {object} {text: '14.5 кВт', className: 'value-large'}
+ * @returns {object} {text: '14.5 Вт', className: 'value-large'}
  */
 function formatMeasuredValue(value) {
     if (typeof value !== 'number') return { text: String(value), className: 'value-number' };
@@ -210,11 +210,11 @@ function formatMeasuredValue(value) {
     const formatted = kw.toLocaleString('ru-RU');
     
     if (kw > 1e6) {
-        return { text: formatted + ' кВт', className: 'value-xlarge' };
+        return { text: formatted + ' Вт', className: 'value-xlarge' };
     } else if (kw > 1e3) {
-        return { text: formatted + ' кВт', className: 'value-large' };
+        return { text: formatted + ' Вт', className: 'value-large' };
     } else {
-        return { text: formatted + ' кВт', className: 'value-number' };
+        return { text: formatted + ' Вт', className: 'value-number' };
     }
 }
 
@@ -260,7 +260,7 @@ function generateSummaryByObjectType(dataMapping, values) {
             content += `
                 <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.1);">
                     <span style="color: #666;">${item.name}:</span>
-                    <strong style="color: ${group.color};">${item.value.toLocaleString('ru-RU')} кВт</strong>
+                    <strong style="color: ${group.color};">${item.value.toLocaleString('ru-RU')} Вт</strong>
                 </div>
             `;
         });

@@ -90,6 +90,10 @@ const NEVA_SP111_09_CONFIG = {
     }
 };
 
+if (typeof window !== 'undefined') {
+    window.NEVA_SP111_09_CONFIG = NEVA_SP111_09_CONFIG;
+}
+
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = NEVA_SP111_09_CONFIG;
 }

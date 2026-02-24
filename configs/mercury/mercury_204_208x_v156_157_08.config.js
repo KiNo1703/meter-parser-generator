@@ -141,6 +141,10 @@ const MERCURY_204_208X_V156_157_08_CONFIG = {
     }
 };
 
+if (typeof window !== 'undefined') {
+    window.MERCURY_204_208X_V156_157_08_CONFIG = MERCURY_204_208X_V156_157_08_CONFIG;
+}
+
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = MERCURY_204_208X_V156_157_08_CONFIG;
 }

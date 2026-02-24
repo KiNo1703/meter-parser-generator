@@ -137,6 +137,10 @@ const MERCURY_150_CONFIG = {
 };
 
 // Для обратной совместимости
+if (typeof window !== 'undefined') {
+    window.MERCURY_150_CONFIG = MERCURY_150_CONFIG;
+}
+
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = MERCURY_150_CONFIG;
 }

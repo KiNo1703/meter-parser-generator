@@ -90,6 +90,10 @@ const MERCURY_208_V69_10_CONFIG = {
     }
 };
 
+if (typeof window !== 'undefined') {
+    window.MERCURY_208_V69_10_CONFIG = MERCURY_208_V69_10_CONFIG;
+}
+
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = MERCURY_208_V69_10_CONFIG;
 }

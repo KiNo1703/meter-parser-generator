@@ -119,6 +119,10 @@ const NARTIS_100_08_CONFIG = {
     }
 };
 
+if (typeof window !== 'undefined') {
+    window.NARTIS_100_08_CONFIG = NARTIS_100_08_CONFIG;
+}
+
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = NARTIS_100_08_CONFIG;
 }

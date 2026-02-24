@@ -130,6 +130,10 @@ const ENERGOMERA_310_07_CONFIG = {
     }
 };
 
+if (typeof window !== 'undefined') {
+    window.ENERGOMERA_310_07_CONFIG = ENERGOMERA_310_07_CONFIG;
+}
+
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = ENERGOMERA_310_07_CONFIG;
 }

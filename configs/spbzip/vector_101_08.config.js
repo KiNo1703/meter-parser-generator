@@ -90,6 +90,10 @@ const VECTOR_101_08_CONFIG = {
     }
 };
 
+if (typeof window !== 'undefined') {
+    window.VECTOR_101_08_CONFIG = VECTOR_101_08_CONFIG;
+}
+
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = VECTOR_101_08_CONFIG;
 }

@@ -118,6 +118,10 @@ const ENERGOMERA_210_03_CONFIG = {
     }
 };
 
+if (typeof window !== 'undefined') {
+    window.ENERGOMERA_210_03_CONFIG = ENERGOMERA_210_03_CONFIG;
+}
+
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = ENERGOMERA_210_03_CONFIG;
 }

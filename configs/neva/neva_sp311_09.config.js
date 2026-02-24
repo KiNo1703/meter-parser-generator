@@ -125,6 +125,10 @@ const NEVA_SP311_09_CONFIG = {
     }
 };
 
+if (typeof window !== 'undefined') {
+    window.NEVA_SP311_09_CONFIG = NEVA_SP311_09_CONFIG;
+}
+
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = NEVA_SP311_09_CONFIG;
 }

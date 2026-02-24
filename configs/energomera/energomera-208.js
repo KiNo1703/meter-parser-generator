@@ -100,7 +100,12 @@ presets: {
     }
 };
 
-// Для обратной совместимости
+// Делаем переменную глобальной для использования в браузере
+if (typeof window !== 'undefined') {
+    window.ENERGOMERA_208_CONFIG = ENERGOMERA_208_CONFIG;
+}
+
+// Для обратной совместимости с Node.js
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = ENERGOMERA_208_CONFIG;
 }

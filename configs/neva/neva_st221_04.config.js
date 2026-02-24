@@ -113,6 +113,10 @@ const NEVA_ST221_04_CONFIG = {
     }
 };
 
+if (typeof window !== 'undefined') {
+    window.NEVA_ST221_04_CONFIG = NEVA_ST221_04_CONFIG;
+}
+
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = NEVA_ST221_04_CONFIG;
 }

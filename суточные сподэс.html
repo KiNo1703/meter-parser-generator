@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Мета-тег для идентификации парсера расширением -->
+    <meta name="parser-type" content="universal-4-8">
+    <meta name="parser-name" content="Универсальный (4/8 байт)">
+    <title>DLMS Парсер (4/8 байт)</title>
+    <style>
+        /* Стили остаются без изменений */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6; color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh; padding: 20px;
+        }
+        .container {
+            max-width: 1400px; margin: 0 auto;
+            background: rgba(255,255,255,0.95); border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3); overflow: hidden;
+        }
+        header {
+            background: linear-gradient(135deg, #2c3e50, #1a2530);
+            color: white; padding: 25px; text-align: center;
+        }
+        h1 { font-size: 2.2em; margin-bottom: 10px; }
+        .content { display: flex; flex-direction: column; padding: 25px; gap: 25px; }
+        .input-section, .output-section { flex: 1; min-width: 400px; }
+        .section-card {
+            background: white; border-radius: 10px; padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1); margin-bottom: 20px;
+        }
+        h2 {
+            color: #2c3e50; margin-bottom: 20px; padding-bottom: 10px;
+            border-bottom: 2px solid #3498db; font-size: 1.5em;
+        }
+
+        /* Индикатор загрузки из URL */
+        .url-indicator {
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+            border-left: 4px solid #1976d2;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            display: none;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+            box-shadow: 0 2px 8px rgba(25,118,210,0.1);
+        }
+        .url-indicator.show {
+            display: flex;
+        }
+        .url-indicator-icon {
+            font-size: 20px;
+        }
+        .url-indicator-text {
+            flex: 1;
+            color: #0d47a1;
+        }
+        .url-indicator-close {
+            background: none;
+            border: none;
+            color: #1976d2;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 0 8px;
+            min-width: auto;
+            flex: 0;
+        }
+        .url-indicator-close:hover {
+            background: rgba(25,118,210,0.1);
+            transform: none;
+            box-shadow: none;
+        }
+
+        textarea {
+            width: 100%; padding: 12px; margin-bottom: 15px;
+            border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px;
+            transition: border-color 0.3s;
+            height: 200px;
+            font-family: 'Consolas', monospace;
+            resize: vertical;
+            line-height: 1.4;
+        }
+        textarea:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        button {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            flex: 1;
+            min-width: 120px;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52,152,219,0.4);
+        }
+        .btn-secondary {
+            background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+        }
+        .btn-4byte {
+            background: linear-gradient(135deg, #27ae60, #219653);
+        }
+        .btn-8byte {
+            background: linear-gradient(135deg, #e67e22, #d35400);
+        }
+        .result-box {
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 20px;
+            min-height: 400px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        /* Блок времени */
+        .timestamp-card {
+            background: linear-gradient(135deg, #e6f7ff, #b3e0ff);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            border: 1px solid #7fb3d5;
+        }
+        .timestamp-icon {
+            font-size: 28px;
+            background: white;
+            width: 60px;
+            height: 60px;
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .timestamp-content {
+            flex: 1;
+        }
+        .timestamp-datetime {
+            font-size: 20px;
+            font-weight: 700;
+            color: #005a9e;
+            margin-bottom: 5px;
+        }
+        .timestamp-raw {
+            font-family: 'Consolas', monospace;
+            color: #2c3e50;
+            font-size: 14px;
+            background: rgba(255,255,255,0.5);
+            padding: 5px 10px;
+            border-radius: 6px;
+            display: inline-block;
+        }
+
+        /* Бейджи */
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-right: 8px;
+        }
+        .badge-profile {
+            background: #e3f2fd;
+            color: #1565c0;
+        }
+        .badge-mask {
+            background: #ede7f6;
+            color: #5e35b1;
+        }
+        .badge-records {
+            background: #fff3e0;
+            color: #ef6c00;
+        }
+        .badge-mode {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        /* Таблица - скрываем колонки смещения и типа */
+        .value-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .value-table th {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            text-align: left;
+            padding: 14px 12px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .value-table td {
+            padding: 12px;
+            border-bottom: 1px solid #e2e8f0;
+            background: white;
+            vertical-align: middle;
+        }
+        .value-table tr:last-child td {
+            border-bottom: none;
+        }
+        .value-table tr:hover td {
+            background: #f1f9ff;
+        }
+
+        /* Скрываем колонки: смещение (2), HEX (3) и тип (4) */
+        .value-table th:nth-child(2),
+        .value-table td:nth-child(2),
+        .value-table th:nth-child(3),
+        .value-table td:nth-child(3),
+        .value-table th:nth-child(4),
+        .value-table td:nth-child(4) {
+            display: none;
+        }
+
+        /* Значения */
+        .value-number {
+            font-weight: 700;
+            color: #2c3e50;
+            font-size: 16px;
+        }
+
+        .value-large {
+            font-weight: 700;
+            color: #005a9e;
+            font-size: 18px;
+            letter-spacing: 0.5px;
+        }
+
+        .value-xlarge {
+            font-weight: 800;
+            color: #0b5e8a;
+            font-size: 20px;
+            background: #e3f2fd;
+            padding: 4px 10px;
+            border-radius: 8px;
+            display: inline-block;
+            border-left: 3px solid #3498db;
+        }
+
+        /* Сводка */
+        .summary-box {
+            background: linear-gradient(135deg, #f8fafc, #edf2f7);
+            border-radius: 10px;
+            padding: 18px;
+            margin: 20px 0 0;
+            border-left: 4px solid #3498db;
+            font-size: 14px;
+        }
+        .summary-title {
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .summary-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .stat-item {
+            color: #4a5568;
+        }
+        .stat-value {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-left: 5px;
+        }
+
+        .info-box, .error-box {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid;
+        }
+        .info-box  {
+            background: #e8f4fc;
+            border-left-color: #3498db;
+        }
+        .error-box {
+            background: #ffeaea;
+            border-left-color: #e74c3c;
+            color: #c0392b;
+        }
+
+        @media (max-width: 768px) {
+            .content { flex-direction: column; }
+            .summary-stats { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>DLMS Парсер</h1>
+            <p>Универсальный (4/8 байт)</p>
+        </header>
+
+        <div class="content">
+            <div class="input-section">
+                <div class="section-card">
+                    <!-- Индикатор загрузки из URL -->
+                    <div id="urlIndicator" class="url-indicator">
+                        <span class="url-indicator-icon">📎</span>
+                        <span class="url-indicator-text">Сообщение загружено из внешнего источника. Нажмите кнопку разбора для анализа.</span>
+                        <button class="url-indicator-close" onclick="hideUrlIndicator()">✕</button>
+                    </div>
+
+                    <h2>📝 Ввод данных</h2>
+
+                    <!-- ВЫБОР МОДЕЛИ - КАК В ГЕНЕРАТОРЕ -->
+                    <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #ff9800;">
+                        <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                            <div style="flex: 1; min-width: 200px;">
+                                <label for="manufacturerSelectParser" style="display: block; margin-bottom: 8px; font-weight: 600; color: #ff9800;">
+                                    🏭 Производитель:
+                                </label>
+                                <select id="manufacturerSelectParser" style="width: 100%; padding: 10px; border: 2px solid #ff9800; border-radius: 6px; font-size: 14px; cursor: pointer;">
+                                    <option value="">-- Выберите производителя --</option>
+                                </select>
+                            </div>
+                            <div style="flex: 1; min-width: 200px;">
+                                <label for="modelSelectParser" style="display: block; margin-bottom: 8px; font-weight: 600; color: #ff9800;">
+                                    📊 Модель счетчика:
+                                </label>
+                                <select id="modelSelectParser" style="width: 100%; padding: 10px; border: 2px solid #ff9800; border-radius: 6px; font-size: 14px; cursor: pointer;">
+                                    <option value="">-- Сначала выберите производителя --</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Кнопки сверху -->
+                    <div class="button-group">
+                        <button onclick="parseMessage(4)" class="btn-4byte">🔍 Разобрать (4 байта)</button>
+                        <button onclick="parseMessage(8)" class="btn-8byte">🔍 Разобрать (8 байт)</button>
+                        <button onclick="clearAll()" class="btn-secondary">🗑 Очистить</button>
+                    </div>
+
+                    <label for="hexInput">Hex сообщение:</label>
+                    <textarea id="hexInput" placeholder="Вставьте hex-сообщение..."></textarea>
+
+                </div>
+            </div>
+
+            <div class="output-section">
+                <div class="section-card">
+                    <h2>📊 Результат</h2>
+                    <div class="result-box" id="resultOutput">
+                        Здесь будет результат...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Конфигурация парсера для расширения
+        window.PARSER_CONFIG = {
+            type: 'universal-4-8',
+            name: 'Универсальный (4/8 байт)',
+            version: '1.0',
+            description: 'Парсер с выбором режима 4 или 8 байт'
+        };
+
+        // Функция для скрытия индикатора
+        function hideUrlIndicator() {
+            document.getElementById('urlIndicator').classList.remove('show');
+        }
+
+        // Функция для проверки валидности hex
+        function isValidHex(hex) {
+            if (!hex || typeof hex !== 'string') return false;
+            const cleanHex = hex.replace(/\s/g, '');
+            return /^[0-9A-Fa-f]+$/.test(cleanHex) && cleanHex.length % 2 === 0;
+        }
+
+        // Загрузка hex из URL параметров
+        function loadHexFromUrl() {
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                let hex = urlParams.get('hex');
+
+                if (hex) {
+                    // Декодируем и очищаем
+                    hex = decodeURIComponent(hex).trim();
+
+                    // Проверяем валидность
+                    if (isValidHex(hex)) {
+                        document.getElementById('hexInput').value = hex;
+                        document.getElementById('urlIndicator').classList.add('show');
+
+                        // Дополнительно: можно показать предпросмотр времени
+                        try {
+                            const bytes = hexToBytes(hex);
+                            if (bytes.length >= 15) {
+                                const timestamp = parseCP32Time(bytes.slice(10, 15));
+                                if (timestamp && timestamp.datetime) {
+                                    // Можно добавить время в индикатор
+                                    document.querySelector('.url-indicator-text').innerHTML =
+                                        `Сообщение от <strong>${timestamp.datetime}</strong> загружено из ссылки. Нажмите кнопку разбора.`;
+                                }
+                            }
+                        } catch (e) {
+                            // Игнорируем ошибки предпросмотра
+                        }
+
+                        // Автоматически парсим с режимом 8 байт
+                        setTimeout(() => parseMessage(8), 500);
+
+                        return true;
+                    } else {
+                        console.warn('Некорректный hex в URL');
+                        showMessage('В ссылке передан некорректный hex', 'error');
+                    }
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки hex из URL:', error);
+            }
+            return false;
+        }
+
+        // API для расширения
+        window.insertHexMessage = function(hex) {
+            if (isValidHex(hex)) {
+                document.getElementById('hexInput').value = hex;
+                document.getElementById('urlIndicator').classList.add('show');
+                document.querySelector('.url-indicator-text').innerHTML =
+                    'Сообщение вставлено расширением. Нажмите кнопку разбора.';
+                // Автоматически парсим с режимом 8 байт
+                setTimeout(() => parseMessage(8), 300);
+                return true;
+            }
+            return false;
+        };
+
+        window.getParserInfo = function() {
+            return {
+                type: 'universal-4-8',
+                name: 'Универсальный (4/8 байт)',
+                currentHex: document.getElementById('hexInput')?.value || '',
+                hasValidHex: isValidHex(document.getElementById('hexInput')?.value)
+            };
+        };
+
+        // Остальные функции без изменений
+        function clearAll() {
+            document.getElementById('hexInput').value = '';
+            document.getElementById('resultOutput').innerHTML = 'Здесь будет результат...';
+            hideUrlIndicator();
+        }
+
+        function hexToBytes(hex) {
+            const cleanHex = hex.replace(/\s/g, '').replace(/[^0-9A-Fa-f]/g, '');
+            if (cleanHex.length % 2 !== 0) {
+                throw new Error('Нечетное количество hex символов');
+            }
+            const bytes = new Uint8Array(cleanHex.length / 2);
+            for (let i = 0; i < cleanHex.length; i += 2) {
+                bytes[i / 2] = parseInt(cleanHex.substr(i, 2), 16);
+            }
+            return bytes;
+        }
+
+        // Чтение 4 байт (Uint32, big-endian)
+        function readUint32BE(bytes, offset) {
+            return (bytes[offset] << 24) |
+                   (bytes[offset + 1] << 16) |
+                   (bytes[offset + 2] << 8) |
+                   bytes[offset + 3];
+        }
+
+        // Чтение 8 байт (Uint64, big-endian) с проверкой на безопасное целое
+        function readUint64BE(bytes, offset) {
+            let value = 0n;
+            for (let i = 0; i < 8; i++) {
+                value = (value << 8n) | BigInt(bytes[offset + i]);
+            }
+            // Если значение в пределах Number.MAX_SAFE_INTEGER, возвращаем Number, иначе строку
+            if (value <= BigInt(Number.MAX_SAFE_INTEGER)) {
+                return Number(value);
+            } else {
+                return value.toString();
+            }
+        }
+
+        function parseCP32Time(bytes) {
+            if (bytes.length !== 5) return { error: 'Invalid CP32' };
+            const m = bytes[0] & 0x3F;
+            const h = bytes[1] & 0x1F;
+            const d = bytes[2] & 0x1F;
+            const yl = (bytes[2] >> 5) & 0x07;
+            const mo = bytes[3] & 0x0F;
+            const yh = (bytes[3] >> 4) & 0x0F;
+            const year = 2000 + (yh << 3 | yl);
+            return {
+                raw: Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase(),
+                datetime: `${d.toString().padStart(2, '0')}.${mo.toString().padStart(2, '0')}.${year} ${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${bytes[4].toString().padStart(2, '0')}`
+            };
+        }
+
+        function maskToIndices(maskBytes) {
+            const indices = [];
+            for (let i = 0; i < maskBytes.length; i++) {
+                const byte = maskBytes[i];
+                for (let bit = 0; bit < 8; bit++) {
+                    if (byte & (1 << bit)) {
+                        indices.push(i * 8 + bit);
+                    }
+                }
+            }
+            return indices;
+        }
+
+        function showMessage(msg, type = 'info') {
+            const box = document.createElement('div');
+            box.className = type === 'error' ? 'error-box' : 'info-box';
+            box.innerHTML = msg;
+            const resultDiv = document.getElementById('resultOutput');
+            resultDiv.insertBefore(box, resultDiv.firstChild);
+            setTimeout(() => box.remove(), 6000);
+        }
+
+        function formatNumber(value) {
+            if (typeof value !== 'number') return { text: String(value), className: 'value-number' };
+
+            const formatted = value.toLocaleString('ru-RU');
+
+            if (value > 1e12) {
+                return { text: formatted, className: 'value-xlarge' };
+            } else if (value > 1e6) {
+                return { text: formatted, className: 'value-large' };
+            } else {
+                return { text: formatted, className: 'value-number' };
+            }
+        }
+
+        // Конвертирует значение в Вт в кВт и форматирует для отображения
+        function formatMeasuredValue(valueInW) {
+            const valueInKW = valueInW / 1000;
+            const formatted = formatNumber(valueInKW);
+            return { text: formatted.text + ' кВт', className: formatted.className };
+        }
+
+        // Группирует значения по энергиям (А+, А-, R+, R-) и определяет тарифы
+        // Анализирует первые 3-4 значения для А+ - АВТОМАТИЧЕСКИ ищет где Т1 + Т2 = Т0
+        // Проверяет все возможные комбинации
+        function analyzeAPlusGroup(values) {
+            if (values.length < 3) return null;
+
+            // Ищем ВСЕ значения - проверяем все возможные суммы
+            // Включая двойные (Т1 + Т2 = Т0) и ТРОЙНЫЕ (Т1 + Т2 + Т3 = Т0)
+            
+            // Сначала проверим суммы двух значений (i + j = k)
+            for (let i = 0; i < values.length; i++) {
+                for (let j = i + 1; j < values.length; j++) {
+                    for (let k = 0; k < values.length; k++) {
+                        if (k !== i && k !== j) {
+                            const vi = typeof values[i].value === 'number' ? values[i].value : 0;
+                            const vj = typeof values[j].value === 'number' ? values[j].value : 0;
+                            const vk = typeof values[k].value === 'number' ? values[k].value : 0;
+                            
+                            const sum = vi + vj;
+                            const tolerance = Math.max(sum * 0.00001, 1);
+                            
+                            if (Math.abs(sum - vk) < tolerance && sum > 1000) {
+                                return {
+                                    T1: values[i],
+                                    T2: values[j],
+                                    T0: values[k],
+                                    T3: null,
+                                    isValid: true,
+                                    indices: { t1: i + 1, t2: j + 1, t0: k + 1 }
+                                };
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Теперь проверим суммы ТРЕХ значений (i + j + m = k)
+            for (let i = 0; i < values.length; i++) {
+                for (let j = i + 1; j < values.length; j++) {
+                    for (let m = j + 1; m < values.length; m++) {
+                        for (let k = 0; k < values.length; k++) {
+                            if (k !== i && k !== j && k !== m) {
+                                const vi = typeof values[i].value === 'number' ? values[i].value : 0;
+                                const vj = typeof values[j].value === 'number' ? values[j].value : 0;
+                                const vm = typeof values[m].value === 'number' ? values[m].value : 0;
+                                const vk = typeof values[k].value === 'number' ? values[k].value : 0;
+                                
+                                const sum = vi + vj + vm;
+                                const tolerance = Math.max(sum * 0.00001, 1);
+                                
+                                if (Math.abs(sum - vk) < tolerance && sum > 1000) {
+                                    return {
+                                        T1: values[i],
+                                        T2: values[j],
+                                        T3: values[m],
+                                        T0: values[k],
+                                        isValid: true,
+                                        indices: { t1: i + 1, t2: j + 1, t3: m + 1, t0: k + 1 }
+                                    };
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Если не найдено - возвращаем null
+            return null;
+        }
+
+        function parseMessage(mode) {
+            try {
+                const hex = document.getElementById('hexInput').value.trim();
+                if (!hex) {
+                    showMessage('Введите hex сообщение!', 'error');
+                    return;
+                }
+
+                const bytes = hexToBytes(hex);
+                if (bytes.length < 15) throw new Error('Слишком короткое сообщение (минимум 15 байт)');
+
+                // Заголовок
+                const command = bytes[0];
+                const status = bytes[1];
+                const profile = bytes[2];
+                const recordCount = bytes[3];
+                const maskBytes = bytes.slice(4, 10);
+                const mask = Array.from(maskBytes).map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+                const maskIndices = maskToIndices(maskBytes);
+
+                // Время
+                const timestamp = parseCP32Time(bytes.slice(10, 15));
+
+                // Парсинг данных в зависимости от режима
+                const blockSize = mode; // 4 или 8
+                let pos = 15;
+                const values = [];
+                let index = 1;
+
+                while (pos + blockSize <= bytes.length) {
+                    const chunk = bytes.slice(pos, pos + blockSize);
+                    const hexStr = Array.from(chunk).map(b => b.toString(16).padStart(2, '0')).join(' ');
+
+                    let parsedValue;
+                    let dataType = blockSize === 4 ? 'UINT32' : 'UINT64';
+
+                    try {
+                        if (blockSize === 4) {
+                            parsedValue = readUint32BE(bytes, pos);
+                        } else {
+                            parsedValue = readUint64BE(bytes, pos);
+                        }
+                    } catch (e) {
+                        parsedValue = 'Ошибка чтения';
+                    }
+
+                    values.push({
+                        index: index++,
+                        hex: hexStr,
+                        value: parsedValue,
+                        type: dataType,
+                        offset: pos
+                    });
+
+                    pos += blockSize;
+                }
+
+                // Если остались неполные данные
+                if (pos < bytes.length) {
+                    const remaining = bytes.length - pos;
+                    const chunk = bytes.slice(pos);
+                    const hexStr = Array.from(chunk).map(b => b.toString(16).padStart(2, '0')).join(' ');
+                    values.push({
+                        index: index,
+                        hex: hexStr,
+                        value: `Неполный блок (${remaining} байт)`,
+                        type: 'PARTIAL',
+                        offset: pos
+                    });
+                    pos = bytes.length;
+                }
+
+                // Отображение
+                const selectedModelId = document.getElementById('modelSelectParser').value;
+                const selectedModel = selectedModelId && window.AVAILABLE_MODELS 
+                    ? window.AVAILABLE_MODELS[selectedModelId] 
+                    : null;
+                
+                displayResult({
+                    command,
+                    status,
+                    profile,
+                    recordCount,
+                    mask,
+                    maskIndices,
+                    timestamp,
+                    values,
+                    totalBytes: bytes.length,
+                    parsedBytes: pos,
+                    mode: blockSize,
+                    selectedModel: selectedModel  // ← ДОБАВЛЯЕМ ВЫБРАННУЮ МОДЕЛЬ
+                });
+
+                // Если был показан индикатор, скрываем его после успешного разбора
+                hideUrlIndicator();
+
+            } catch (error) {
+                showMessage(`Ошибка: ${error.message}`, 'error');
+            }
+        }
+
+        function displayResult(result) {
+            let html = '';
+
+            // ==================== ИСПОЛЬЗУЕМ ВЫБРАННУЮ МОДЕЛЬ ====================
+            console.log('🔍 displayResult вызвана. Маска:', result.mask);
+            console.log('📦 Выбранная модель:', result.selectedModel ? result.selectedModel.name : 'НЕ ВЫБРАНА');
+            
+            const detectedModel = result.selectedModel || null;
+            
+            if (detectedModel) {
+                console.log('✅ Модель найдена:', detectedModel.modelId, detectedModel.name);
+            } else {
+                console.log('⚠️ Модель не выбрана');
+            }
+
+            // Блок времени
+            if (result.timestamp && result.timestamp.datetime) {
+                html += `
+                    <div class="timestamp-card">
+                        <div class="timestamp-icon">⏰</div>
+                        <div class="timestamp-content">
+                            <div class="timestamp-datetime">${result.timestamp.datetime}</div>
+                            <div class="timestamp-raw">${result.timestamp.raw}</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // ==================== МАППИНГ ОБЪЕКТОВ ЕСЛИ МОДЕЛЬ ВЫБРАНА ====================
+            if (detectedModel) {
+                console.log('🔧 Начинаем маппинг объектов...');
+                console.log('📍 decodeMask функция:', typeof decodeMask);
+                
+                const objectIds = decodeMask(result.mask, detectedModel);
+                console.log('🎯 Декодированные объекты:', objectIds);
+                
+                const dataMapping = mapDataIndicesToObjects(objectIds, detectedModel);
+                console.log('📋 Маппинг данных:', dataMapping);
+                
+                if (dataMapping && dataMapping.length > 0 && result.values && result.values.length > 0) {
+                    console.log('✨ Генерируем таблицу и сводку...');
+                    html += generateObjectMappingTable(dataMapping, result.values);
+                    html += generateSummaryByObjectType(dataMapping, result.values);
+                    console.log('✅ Таблица и сводка добавлены в HTML');
+                } else {
+                    console.log('⚠️ Маппинг или значения пусты');
+                }
+            } else {
+                console.log('⚠️ Модель не выбрана, пропускаем маппинг');
+            }
+
+            // Анализируем только А+ (первые 3-4 значения)
+            const apGroup = analyzeAPlusGroup(result.values);
+
+            // Выводим А+ только если анализ успешен
+            if (apGroup && apGroup.isValid) {
+                html += '<div style="background: #e8f5e9; border-left: 4px solid #4caf50; padding: 16px; border-radius: 8px; margin: 15px 0;">';
+                html += '<h3 style="color: #2e7d32; margin: 0 0 12px 0;">⚡ А+ (Активная энергия)';
+                if (apGroup.indices) {
+                    // Показываем как нашли сумму: T1 + T2 = T0 ИЛИ T1 + T2 + T3 = T0
+                    if (apGroup.indices.t3) {
+                        html += ` <span style="font-size: 11px; font-weight: normal; background: #c8e6c9; padding: 3px 8px; border-radius: 4px; color: #1b5e20;">найдено: ${apGroup.indices.t1} + ${apGroup.indices.t2} + ${apGroup.indices.t3} = ${apGroup.indices.t0}</span>`;
+                    } else {
+                        html += ` <span style="font-size: 11px; font-weight: normal; background: #c8e6c9; padding: 3px 8px; border-radius: 4px; color: #1b5e20;">найдено: ${apGroup.indices.t1} + ${apGroup.indices.t2} = ${apGroup.indices.t0}</span>`;
+                    }
+                }
+                html += '</h3>';
+                
+                const addrT0 = apGroup.T0 ? formatMeasuredValue(apGroup.T0.value) : null;
+                const addrT1 = apGroup.T1 ? formatMeasuredValue(apGroup.T1.value) : null;
+                const addrT2 = apGroup.T2 ? formatMeasuredValue(apGroup.T2.value) : null;
+                const addrT3 = apGroup.T3 ? formatMeasuredValue(apGroup.T3.value) : null;
+                
+                html += '<div style="display: flex; flex-direction: column; gap: 12px;">';
+                
+                if (addrT0) {
+                    html += `<div style="background: white; padding: 12px; border-radius: 6px; border-left: 3px solid #4caf50;">
+                        <div style="color: #666; font-size: 12px; margin-bottom: 4px;">🎯 Т0 (Cумма)</div>
+                        <div style="color: #2e7d32; font-weight: 700; font-size: 16px;">${addrT0.text}</div>
+                    </div>`;
+                }
+                if (addrT1) {
+                    html += `<div style="background: white; padding: 12px; border-radius: 6px;">
+                        <div style="color: #666; font-size: 12px; margin-bottom: 4px;">📊 Т1</div>
+                        <div style="color: #1565c0; font-weight: 700; font-size: 16px;">${addrT1.text}</div>
+                    </div>`;
+                }
+                if (addrT2) {
+                    html += `<div style="background: white; padding: 12px; border-radius: 6px;">
+                        <div style="color: #666; font-size: 12px; margin-bottom: 4px;">📊 Т2</div>
+                        <div style="color: #f57c00; font-weight: 700; font-size: 16px;">${addrT2.text}</div>
+                    </div>`;
+                }
+                if (addrT3) {
+                    html += `<div style="background: white; padding: 12px; border-radius: 6px;">
+                        <div style="color: #666; font-size: 12px; margin-bottom: 4px;">📊 Т3</div>
+                        <div style="color: #c2185b; font-weight: 700; font-size: 16px;">${addrT3.text}</div>
+                    </div>`;
+                }
+                
+                html += '</div>';
+                
+                // Проверка суммы (2 или 3 слагаемых)
+                if (addrT0) {
+                    if (addrT3 && apGroup.T1 && apGroup.T2 && apGroup.T3) {
+                        // Проверка T1 + T2 + T3 = T0
+                        const sum = (apGroup.T1.value / 1000) + (apGroup.T2.value / 1000) + (apGroup.T3.value / 1000);
+                        const t0Val = apGroup.T0.value / 1000;
+                        const diff = Math.abs(sum - t0Val);
+                        html += '<div style="margin-top: 12px; padding: 8px; background: rgba(76, 175, 80, 0.1); border-radius: 6px; color: #2e7d32; font-size: 13px;">';
+                        html += '✓ Верификация: Т1 + Т2 + Т3 = Т0 ✓ (разница: ' + diff.toFixed(6) + ' кВт)';
+                        html += '</div>';
+                    } else if (addrT1 && addrT2 && apGroup.T1 && apGroup.T2) {
+                        // Проверка T1 + T2 = T0
+                        const sum = (apGroup.T1.value / 1000) + (apGroup.T2.value / 1000);
+                        const t0Val = apGroup.T0.value / 1000;
+                        const diff = Math.abs(sum - t0Val);
+                        html += '<div style="margin-top: 12px; padding: 8px; background: rgba(76, 175, 80, 0.1); border-radius: 6px; color: #2e7d32; font-size: 13px;">';
+                        html += '✓ Верификация: Т1 + Т2 = Т0 ✓ (разница: ' + diff.toFixed(6) + ' кВт)';
+                        html += '</div>';
+                    }
+                }
+                
+                html += '</div>';
+            }
+
+            // Бейджи
+            html += `
+                <div style="margin: 15px 0;">
+                    <span class="badge badge-profile">Профиль: ${result.profile}</span>
+                    <span class="badge badge-mask">Маска: ${result.mask}</span>
+                    <span class="badge badge-records">Записей: ${result.recordCount}</span>
+                    <span class="badge badge-mode">Режим: ${result.mode} байт</span>
+                    <span class="badge badge-mode">Ед.: кВт</span>
+                </div>
+            `;
+
+            // Таблица
+            html += '<table class="value-table">';
+            html += '<tr><th>#</th><th style="display:none;">Смещение</th><th>HEX</th><th style="display:none;">Тип</th><th>Значение</th></tr>';
+
+            result.values.forEach(v => {
+                let valueDisplay = '';
+                if (typeof v.value === 'number') {
+                    const formatted = formatMeasuredValue(v.value);
+                    valueDisplay = `<span class="${formatted.className}">${formatted.text}</span>`;
+                } else {
+                    valueDisplay = `<span class="value-number">${v.value}</span>`;
+                }
+
+                html += `<tr>
+                    <td style="text-align: center; font-weight: 600;">${v.index}</td>
+                    <td style="display:none;"><code>0x${v.offset.toString(16).toUpperCase().padStart(4, '0')}</code></td>
+                    <td><span class="hex-cell">${v.hex}</span></td>
+                    <td style="display:none;"><span>${v.type}</span></td>
+                    <td>${valueDisplay}</td>
+                </tr>`;
+            });
+            html += '</table>';
+
+            // Сводка
+            const success = result.parsedBytes === result.totalBytes;
+            html += `
+                <div class="summary-box">
+                    <div class="summary-title">
+                        <span>📊 Сводка разбора</span>
+                    </div>
+                    <div class="summary-stats">
+                        <div class="stat-item">Найдено значений: <span class="stat-value">${result.values.length}</span></div>
+                        <div class="stat-item">Всего байт: <span class="stat-value">${result.totalBytes}</span></div>
+                        <div class="stat-item">Обработано: <span class="stat-value">${result.parsedBytes}</span></div>
+                        <div class="stat-item">Статус:
+                            <span class="stat-value" style="color: ${success ? '#27ae60' : '#f39c12'};">
+                                ${success ? '✓ Успешно' : '⚠ Неполные данные'}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('resultOutput').innerHTML = html;
+        }
+
+        // Автоматическая загрузка из URL при старте
+        window.onload = function() {
+            loadHexFromUrl();
+        };
+    </script>
+
+    <!-- ==================== ПОДКЛЮЧЕНИЕ УТИЛИТ И КОНФИГУРАЦИЙ ====================  -->
+    <!-- Утилиты работы с масками -->
+    <script src="mask-utils.js"></script>
+    
+    <!-- КОНФИГУРАЦИИ ВСЕХ МОДЕЛЕЙ -->
+    <!-- Энергомера -->
+    <script src="configs/energomera/energomera-208.js"></script>
+    <script src="configs/energomera/energomera_208v6_18.config.js"></script>
+    <script src="configs/energomera/energomera-207.js"></script>
+    <script src="configs/energomera/energomera_210_03.config.js"></script>
+    <script src="configs/energomera/energomera-307.js"></script>
+    <script src="configs/energomera/energomera-308.js"></script>
+    <script src="configs/energomera/energomera_308v6_1c.config.js"></script>
+    <script src="configs/energomera/energomera_310_07.config.js"></script>
+    
+    <!-- Меркурий -->
+    <script src="configs/mercury/mercury-150.js"></script>
+    <script src="configs/mercury/mercury-204-208-19.js"></script>
+    <script src="configs/mercury/mercury_208_204X.config.js"></script>
+    <script src="configs/mercury/mercury_234_238x_09.config.js"></script>
+    <script src="configs/mercury/mercury_204_208x_v156_157_08.config.js"></script>
+    <script src="configs/mercury/mercury_234_238x_v156_157_09.config.js"></script>
+    <script src="configs/mercury/mercury_204_208_v67_12.config.js"></script>
+    <script src="configs/mercury/mercury_208_v69_10.config.js"></script>
+    <script src="configs/mercury/mercury_234_238_v67_11.config.js"></script>
+    <script src="configs/mercury/mercury_204_v69_0f.config.js"></script>
+    
+    <!-- Нева -->
+    <script src="configs/neva/neva-414_v2.js"></script>
+    <script src="configs/neva/neva_st413_0a.config.js"></script>
+    <script src="configs/neva/neva_sp311_09.config.js"></script>
+    <script src="configs/neva/neva_st221_04.config.js"></script>
+    <script src="configs/neva/neva_sp111_09.config.js"></script>
+    <script src="configs/neva/neva_sp111_rev2_08.config.js"></script>
+    <script src="configs/neva/neva_mt115_04.config.js"></script>
+    
+    <!-- СПБ-ЗИП -->
+    <script src="configs/spbzip/vector_101_08.config.js"></script>
+    
+    <!-- Нартис -->
+    <script src="configs/nartis/nartis_100_08.config.js"></script>
+    <script src="configs/nartis/nartis_102_09.config.js"></script>
+    
+    <!-- ЯВНАЯ РЕГИСТРАЦИЯ КОНФИГОВ + ИНИЦИАЛИЗАЦИЯ СЕЛЕКТОВ -->
+    <script>
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                // Явно регистрируем ВСЕ известные конфиги
+                const configs = [
+                    window.ENERGOMERA_208_CONFIG,
+                    window.ENERGOMERA_208V6_18_CONFIG,
+                    window.ENERGOMERA_207_CONFIG,
+                    window.ENERGOMERA_210_03_CONFIG,
+                    window.ENERGOMERA_307_CONFIG,
+                    window.ENERGOMERA_308_CONFIG,
+                    window.ENERGOMERA_308V6_1C_CONFIG,
+                    window.ENERGOMERA_310_07_CONFIG,
+                    window.MERCURY_150_CONFIG,
+                    window.MERCURY_204_208_19_CONFIG,
+                    window.MERCURY_208_204X_CONFIG,
+                    window.MERCURY_234_238X_09_CONFIG,
+                    window.MERCURY_204_208X_V156_157_08_CONFIG,
+                    window.MERCURY_234_238X_V156_157_09_CONFIG,
+                    window.MERCURY_204_208_V67_12_CONFIG,
+                    window.MERCURY_208_V69_10_CONFIG,
+                    window.MERCURY_234_238_V67_11_CONFIG,
+                    window.MERCURY_204_V69_0F_CONFIG,
+                    window.NEVA_414_v2_CONFIG,
+                    window.NEVA_ST413_0A_CONFIG,
+                    window.NEVA_SP311_09_CONFIG,
+                    window.NEVA_ST221_04_CONFIG,
+                    window.NEVA_SP111_09_CONFIG,
+                    window.NEVA_SP111_REV2_08_CONFIG,
+                    window.NEVA_MT115_04_CONFIG,
+                    window.VECTOR_101_08_CONFIG,
+                    window.NARTIS_100_08_CONFIG,
+                    window.NARTIS_102_09_CONFIG
+                ];
+                
+                // Инициализируем глобальное хранилище
+                if (!window.AVAILABLE_MODELS) {
+                    window.AVAILABLE_MODELS = {};
+                }
+                
+                // Регистрируем все конфиги
+                let count = 0;
+                configs.forEach(config => {
+                    if (config && config.modelId && config.name) {
+                        window.AVAILABLE_MODELS[config.modelId] = config;
+                        count++;
+                    }
+                });
+                
+                console.log('✅ Зарегистрировано моделей:', count);
+                
+                // ===== ИНИЦИАЛИЗИРУЕМ СЕЛЕКТЫ =====
+                const manufacturerSelect = document.getElementById('manufacturerSelectParser');
+                const modelSelect = document.getElementById('modelSelectParser');
+                
+                if (!manufacturerSelect || !modelSelect) {
+                    console.warn('⚠️ Селекты не найдены в HTML');
+                    return;
+                }
+
+                // Группируем модели по производителям
+                const modelsByManufacturer = {};
+                
+                Object.entries(window.AVAILABLE_MODELS).forEach(([modelId, config]) => {
+                    const manufacturer = config.manufacturer || 'Unknown';
+                    if (!modelsByManufacturer[manufacturer]) {
+                        modelsByManufacturer[manufacturer] = [];
+                    }
+                    modelsByManufacturer[manufacturer].push({
+                        id: modelId,
+                        name: config.name,
+                        config: config
+                    });
+                });
+
+                // Заполняем select производителей
+                Object.keys(modelsByManufacturer).sort().forEach(manufacturer => {
+                    const option = document.createElement('option');
+                    option.value = manufacturer;
+                    option.textContent = manufacturer;
+                    manufacturerSelect.appendChild(option);
+                });
+
+                // Обработчик изменения производителя
+                manufacturerSelect.addEventListener('change', function() {
+                    const selectedManufacturer = this.value;
+                    
+                    // Очищаем select моделей
+                    while (modelSelect.options.length > 1) {
+                        modelSelect.remove(1);
+                    }
+                    
+                    if (!selectedManufacturer) {
+                        modelSelect.disabled = true;
+                        modelSelect.options[0].textContent = '-- Сначала выберите производителя --';
+                        return;
+                    }
+                    
+                    modelSelect.disabled = false;
+                    modelSelect.options[0].textContent = '-- Выберите модель --';
+                    
+                    // Заполняем select моделей для выбранного производителя
+                    modelsByManufacturer[selectedManufacturer].forEach(model => {
+                        const option = document.createElement('option');
+                        option.value = model.id;
+                        option.textContent = model.name;
+                        modelSelect.appendChild(option);
+                    });
+                });
+
+                console.log('🏭 ===== ИНИЦИАЛИЗАЦИЯ ЗАВЕРШЕНА =====');
+                console.log(`🏢 Производителей: ${Object.keys(modelsByManufacturer).length}`);
+                console.log(`📦 Доступные производители:`, Object.keys(modelsByManufacturer).sort());
+            }, 100);
+        });
+    </script>
+    
+</body>
+</html>

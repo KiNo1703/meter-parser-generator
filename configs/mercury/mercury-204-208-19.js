@@ -146,6 +146,11 @@ const MERCURY_204_208_19_CONFIG = {  // ← ТАК ТОЖЕ МОЖНО!
     }
 };
 
+// Make global for browser
+if (typeof window !== 'undefined') {
+    window.MERCURY_204_208_19_CONFIG = MERCURY_204_208_19_CONFIG;
+}
+
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = MERCURY_204_208_19_CONFIG;
 }

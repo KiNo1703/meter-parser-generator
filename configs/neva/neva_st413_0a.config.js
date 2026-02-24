@@ -121,6 +121,10 @@ const NEVA_ST413_0A_CONFIG = {
     }
 };
 
+if (typeof window !== 'undefined') {
+    window.NEVA_ST413_0A_CONFIG = NEVA_ST413_0A_CONFIG;
+}
+
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = NEVA_ST413_0A_CONFIG;
 }

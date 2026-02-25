@@ -1,0 +1,86 @@
+// Файл: mercury_204_208_v67_12.config.js
+// Суточный журнал показаний (Журнал 0x12)
+// Модель: Меркурий 204/208 V67
+// minObjectId = 2, maxObjectId = 9
+// Все показания типа UINT32
+
+const MERCURY_204_208_V67_12_CONFIG = {
+    modelId: 'mercury_204_208_v67_12',
+    name: 'Меркурий 204/208 V67 (суточный журнал 0x12)',
+    manufacturer: 'Меркурий',
+    description: 'Суточный журнал 0x12. Поддерживает объекты 2-9. Все показания типа UINT32.',
+    
+    journalId: '12',
+    commandCode: '0066',
+    minObjectId: 2,
+    maxObjectId: 9,
+    bitShift: 1, // Меркурий: сдвиг = 1
+    periodDefault: 21600, // Сутки
+    
+    objectGroups: [
+        {
+            name: '⚡ Активная энергия A+ (Потребление)',
+            icon: '⚡',
+            description: 'Потребление активной энергии по тарифам (все UINT32)',
+            objects: [
+                { id: 2, name: 'A+ T0 (сумма)', obis: '1.0.1.8.0.255', desc: 'Активная энергия потребление суммарно', type: 'UINT32' },
+                { id: 3, name: 'A+ T1', obis: '1.0.1.8.1.255', desc: 'Активная энергия потребление T1', type: 'UINT32' },
+                { id: 4, name: 'A+ T2', obis: '1.0.1.8.2.255', desc: 'Активная энергия потребление T2', type: 'UINT32' },
+                { id: 5, name: 'A+ T3', obis: '1.0.1.8.3.255', desc: 'Активная энергия потребление T3', type: 'UINT32' },
+                { id: 6, name: 'A+ T4', obis: '1.0.1.8.4.255', desc: 'Активная энергия потребление T4', type: 'UINT32' }
+            ]
+        },
+        {
+            name: '⚡⬇️ Активная энергия A- (Отдача)',
+            icon: '⚡⬇️',
+            description: 'Отдача активной энергии (UINT32)',
+            objects: [
+                { id: 7, name: 'A- T0 (сумма)', obis: '1.0.2.8.0.255', desc: 'Активная энергия отдача суммарно', type: 'UINT32' }
+            ]
+        },
+        {
+            name: '🔄+ Реактивная энергия R+ (Емкостная)',
+            icon: '🔄+',
+            description: 'Реактивная энергия емкостная (UINT32)',
+            objects: [
+                { id: 8, name: 'R+ T0 (сумма)', obis: '1.0.3.8.0.255', desc: 'Реактивная энергия емкостная суммарно', type: 'UINT32' }
+            ]
+        },
+        {
+            name: '🔄- Реактивная энергия R- (Индуктивная)',
+            icon: '🔄-',
+            description: 'Реактивная энергия индуктивная (UINT32)',
+            objects: [
+                { id: 9, name: 'R- T0 (сумма)', obis: '1.0.4.8.0.255', desc: 'Реактивная энергия индуктивная суммарно', type: 'UINT32' }
+            ]
+        }
+    ],
+    
+    presets: {
+        minimal: [2, 3, 4], // A+ T0, T1, T2
+        default: [
+            2, 3, 4, // A+ T0, T1, T2
+            7,       // A- T0
+            8,       // R+ T0
+            9        // R- T0
+        ],
+        all: Array.from({ length: 8 }, (_, i) => i + 2) // 2..9
+    },
+    
+    info: {
+        manufacturer: 'Меркурий',
+        model: '204/208 V67',
+        protocol: 'DLMS/COSEM',
+        journal: '0x12 - Суточный журнал',
+        maxTasks: 16,
+        note: 'Объекты 2-9, bitShift: 1, все показания UINT32'
+    }
+};
+
+if (typeof window !== 'undefined') {
+    window.MERCURY_204_208_V67_12_CONFIG = MERCURY_204_208_V67_12_CONFIG;
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = MERCURY_204_208_V67_12_CONFIG;
+}

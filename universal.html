@@ -359,8 +359,8 @@
 
                     <!-- Кнопки сверху -->
                     <div class="button-group">
-                        <button onclick="parseMessage(4)" class="btn-4byte">🔍 Разобрать (Старые СПОДЭС)</button>
-                        <button onclick="parseMessage(8)" class="btn-8byte">🔍 Разобрать (Новые СПОДЭС)</button>
+                        <button onclick="parseMessage(4)" class="btn-4byte">🔍 Разобрать (Старый СПОДЭС)</button>
+                        <button onclick="parseMessage(8)" class="btn-8byte">🔍 Разобрать (Новый СПОДЭС)</button>
                         <button onclick="clearAll()" class="btn-secondary">🗑 Очистить</button>
                     </div>
 
@@ -385,9 +385,19 @@
         // Конфигурация парсера для расширения
         window.PARSER_CONFIG = {
             type: 'universal-4-8',
-            name: 'Универсальный (4/8 байт)',
+            name: 'Универсальный',
             version: '1.0',
-            description: 'Парсер с выбором режима 4 или 8 байт'
+            description: 'Парсер с выбором режима',
+            loaded: false,
+            ready: false
+        };
+
+        // Функция инициализации парсера - вызывается расширением
+        window.initParser = function() {
+            window.PARSER_CONFIG.loaded = true;
+            window.PARSER_CONFIG.ready = true;
+            console.log('✅ Parser initialized:', window.PARSER_CONFIG);
+            return window.PARSER_CONFIG;
         };
 
         // Функция для скрытия индикатора
@@ -466,8 +476,34 @@
                 type: 'universal-4-8',
                 name: 'Универсальный (4/8 байт)',
                 currentHex: document.getElementById('hexInput')?.value || '',
-                hasValidHex: isValidHex(document.getElementById('hexInput')?.value)
+                hasValidHex: isValidHex(document.getElementById('hexInput')?.value),
+                loaded: window.PARSER_CONFIG.loaded,
+                ready: window.PARSER_CONFIG.ready
             };
+        };
+
+        // Функция для получения результатов парсинга (для расширения)
+        window.getParsingResult = function() {
+            const resultDiv = document.getElementById('resultOutput');
+            if (resultDiv && resultDiv.innerHTML !== 'Здесь будет результат...') {
+                return {
+                    success: true,
+                    result: resultDiv.innerHTML
+                };
+            }
+            return { success: false, result: null };
+        };
+
+        // Функция для отправки результатов в расширение (если надо)
+        window.sendToExtension = function(data) {
+            if (window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'PARSER_RESULT',
+                    parser: 'universal-4-8',
+                    data: data
+                }, '*');
+            }
+            console.log('📤 Данные отправлены расширению:', data);
         };
 
         // Остальные функции без изменений
@@ -562,12 +598,16 @@
             }
         }
 
-        // Конвертирует значение в Вт в кВт и форматирует для отображения
+        // Конвертирует значение в кВт и форматирует для отображения (scale 0.01)
         function formatMeasuredValue(valueInW) {
-            const valueInKW = valueInW / 1000;
+            if (typeof valueInW !== 'number') return { text: String(valueInW), className: 'value-number' };
+
+            const valueInKW = valueInW / 100;
             const formatted = formatNumber(valueInKW);
             return { text: formatted.text + ' кВт', className: formatted.className };
         }
+
+
 
         // Группирует значения по энергиям (А+, А-, R+, R-) и определяет тарифы
         // Анализирует первые 3-4 значения для А+ - АВТОМАТИЧЕСКИ ищет где Т1 + Т2 = Т0
@@ -577,7 +617,7 @@
 
             // Ищем ВСЕ значения - проверяем все возможные суммы
             // Включая двойные (Т1 + Т2 = Т0) и ТРОЙНЫЕ (Т1 + Т2 + Т3 = Т0)
-            
+
             // Сначала проверим суммы двух значений (i + j = k)
             for (let i = 0; i < values.length; i++) {
                 for (let j = i + 1; j < values.length; j++) {
@@ -586,10 +626,10 @@
                             const vi = typeof values[i].value === 'number' ? values[i].value : 0;
                             const vj = typeof values[j].value === 'number' ? values[j].value : 0;
                             const vk = typeof values[k].value === 'number' ? values[k].value : 0;
-                            
+
                             const sum = vi + vj;
                             const tolerance = Math.max(sum * 0.00001, 1);
-                            
+
                             if (Math.abs(sum - vk) < tolerance && sum > 1000) {
                                 return {
                                     T1: values[i],
@@ -604,7 +644,7 @@
                     }
                 }
             }
-            
+
             // Теперь проверим суммы ТРЕХ значений (i + j + m = k)
             for (let i = 0; i < values.length; i++) {
                 for (let j = i + 1; j < values.length; j++) {
@@ -615,10 +655,10 @@
                                 const vj = typeof values[j].value === 'number' ? values[j].value : 0;
                                 const vm = typeof values[m].value === 'number' ? values[m].value : 0;
                                 const vk = typeof values[k].value === 'number' ? values[k].value : 0;
-                                
+
                                 const sum = vi + vj + vm;
                                 const tolerance = Math.max(sum * 0.00001, 1);
-                                
+
                                 if (Math.abs(sum - vk) < tolerance && sum > 1000) {
                                     return {
                                         T1: values[i],
@@ -634,7 +674,7 @@
                     }
                 }
             }
-            
+
             // Если не найдено - возвращаем null
             return null;
         }
@@ -713,10 +753,10 @@
 
                 // Отображение
                 const selectedModelId = document.getElementById('modelSelectParser').value;
-                const selectedModel = selectedModelId && window.AVAILABLE_MODELS 
-                    ? window.AVAILABLE_MODELS[selectedModelId] 
+                const selectedModel = selectedModelId && window.AVAILABLE_MODELS
+                    ? window.AVAILABLE_MODELS[selectedModelId]
                     : null;
-                
+
                 displayResult({
                     command,
                     status,
@@ -735,6 +775,16 @@
                 // Если был показан индикатор, скрываем его после успешного разбора
                 hideUrlIndicator();
 
+                // Отправляем результаты в расширение (если оно вызвало парсинг)
+                if (window.parent !== window || window.opener) {
+                    window.sendToExtension({
+                        timestamp: timestamp,
+                        mask: mask,
+                        values: values,
+                        parsed: true
+                    });
+                }
+
             } catch (error) {
                 showMessage(`Ошибка: ${error.message}`, 'error');
             }
@@ -746,9 +796,9 @@
             // ==================== ИСПОЛЬЗУЕМ ВЫБРАННУЮ МОДЕЛЬ ====================
             console.log('🔍 displayResult вызвана. Маска:', result.mask);
             console.log('📦 Выбранная модель:', result.selectedModel ? result.selectedModel.name : 'НЕ ВЫБРАНА');
-            
+
             const detectedModel = result.selectedModel || null;
-            
+
             if (detectedModel) {
                 console.log('✅ Модель найдена:', detectedModel.modelId, detectedModel.name);
             } else {
@@ -772,13 +822,13 @@
             if (detectedModel) {
                 console.log('🔧 Начинаем маппинг объектов...');
                 console.log('📍 decodeMask функция:', typeof decodeMask);
-                
+
                 const objectIds = decodeMask(result.mask, detectedModel);
                 console.log('🎯 Декодированные объекты:', objectIds);
-                
+
                 const dataMapping = mapDataIndicesToObjects(objectIds, detectedModel);
                 console.log('📋 Маппинг данных:', dataMapping);
-                
+
                 if (dataMapping && dataMapping.length > 0 && result.values && result.values.length > 0) {
                     console.log('✨ Генерируем таблицу и сводку...');
                     html += generateObjectMappingTable(dataMapping, result.values);
@@ -807,14 +857,14 @@
                     }
                 }
                 html += '</h3>';
-                
+
                 const addrT0 = apGroup.T0 ? formatMeasuredValue(apGroup.T0.value) : null;
                 const addrT1 = apGroup.T1 ? formatMeasuredValue(apGroup.T1.value) : null;
                 const addrT2 = apGroup.T2 ? formatMeasuredValue(apGroup.T2.value) : null;
                 const addrT3 = apGroup.T3 ? formatMeasuredValue(apGroup.T3.value) : null;
-                
+
                 html += '<div style="display: flex; flex-direction: column; gap: 12px;">';
-                
+
                 if (addrT0) {
                     html += `<div style="background: white; padding: 12px; border-radius: 6px; border-left: 3px solid #4caf50;">
                         <div style="color: #666; font-size: 12px; margin-bottom: 4px;">🎯 Т0 (Cумма)</div>
@@ -839,30 +889,30 @@
                         <div style="color: #c2185b; font-weight: 700; font-size: 16px;">${addrT3.text}</div>
                     </div>`;
                 }
-                
+
                 html += '</div>';
-                
+
                 // Проверка суммы (2 или 3 слагаемых)
                 if (addrT0) {
                     if (addrT3 && apGroup.T1 && apGroup.T2 && apGroup.T3) {
                         // Проверка T1 + T2 + T3 = T0
-                        const sum = (apGroup.T1.value / 1000) + (apGroup.T2.value / 1000) + (apGroup.T3.value / 1000);
-                        const t0Val = apGroup.T0.value / 1000;
+                        const sum = (apGroup.T1.value / 100) + (apGroup.T2.value / 100) + (apGroup.T3.value / 100);
+                        const t0Val = apGroup.T0.value / 100;
                         const diff = Math.abs(sum - t0Val);
                         html += '<div style="margin-top: 12px; padding: 8px; background: rgba(76, 175, 80, 0.1); border-radius: 6px; color: #2e7d32; font-size: 13px;">';
                         html += '✓ Верификация: Т1 + Т2 + Т3 = Т0 ✓ (разница: ' + diff.toFixed(6) + ' кВт)';
                         html += '</div>';
                     } else if (addrT1 && addrT2 && apGroup.T1 && apGroup.T2) {
                         // Проверка T1 + T2 = T0
-                        const sum = (apGroup.T1.value / 1000) + (apGroup.T2.value / 1000);
-                        const t0Val = apGroup.T0.value / 1000;
+                        const sum = (apGroup.T1.value / 100) + (apGroup.T2.value / 100);
+                        const t0Val = apGroup.T0.value / 100;
                         const diff = Math.abs(sum - t0Val);
                         html += '<div style="margin-top: 12px; padding: 8px; background: rgba(76, 175, 80, 0.1); border-radius: 6px; color: #2e7d32; font-size: 13px;">';
                         html += '✓ Верификация: Т1 + Т2 = Т0 ✓ (разница: ' + diff.toFixed(6) + ' кВт)';
                         html += '</div>';
                     }
                 }
-                
+
                 html += '</div>';
             }
 
@@ -925,25 +975,74 @@
 
         // Автоматическая загрузка из URL при старте
         window.onload = function() {
+            // Инициализируем парсер
+            window.initParser();
+
+            // Сигнал расширению о готовности
+            if (window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'PARSER_READY',
+                    parser: 'universal-4-8',
+                    config: window.PARSER_CONFIG
+                }, '*');
+            }
+
+            // Также отправляем событие
+            window.dispatchEvent(new CustomEvent('parserReady', {
+                detail: window.PARSER_CONFIG
+            }));
+
+            console.log('✅ Parser ready for extension');
+
             loadHexFromUrl();
         };
+
+        // Слушатель сообщений от расширения (ПОСЛЕ определения всех функций)
+        window.addEventListener('message', function(event) {
+            console.log('📨 Сообщение получено от расширения:', event.data);
+
+            // Проверяем подлинность сообщения
+            if (event.data && event.data.type) {
+                switch(event.data.type) {
+                    case 'INSERT_HEX':
+                        if (event.data.hex) {
+                            window.insertHexMessage(event.data.hex);
+                        }
+                        break;
+                    case 'GET_INFO':
+                        const info = window.getParserInfo();
+                        if (window.parent !== window) {
+                            window.parent.postMessage({
+                                type: 'PARSER_INFO_RESPONSE',
+                                data: info
+                            }, '*');
+                        }
+                        break;
+                    case 'PARSE':
+                        const mode = event.data.mode || 8;
+                        parseMessage(mode);
+                        break;
+                    case 'CLEAR':
+                        clearAll();
+                        break;
+                }
+            }
+        });
     </script>
 
     <!-- ==================== ПОДКЛЮЧЕНИЕ УТИЛИТ И КОНФИГУРАЦИЙ ====================  -->
     <!-- Утилиты работы с масками -->
     <script src="mask-utils.js"></script>
-    
+
     <!-- КОНФИГУРАЦИИ ВСЕХ МОДЕЛЕЙ -->
     <!-- Энергомера -->
     <script src="configs/energomera/energomera-208.js"></script>
-    <script src="configs/energomera/energomera_208v6_18.config.js"></script>
     <script src="configs/energomera/energomera-207.js"></script>
     <script src="configs/energomera/energomera_210_03.config.js"></script>
     <script src="configs/energomera/energomera-307.js"></script>
     <script src="configs/energomera/energomera-308.js"></script>
-    <script src="configs/energomera/energomera_308v6_1c.config.js"></script>
     <script src="configs/energomera/energomera_310_07.config.js"></script>
-    
+
     <!-- Меркурий -->
     <script src="configs/mercury/mercury-150.js"></script>
     <script src="configs/mercury/mercury-204-208-19.js"></script>
@@ -955,7 +1054,7 @@
     <script src="configs/mercury/mercury_208_v69_10.config.js"></script>
     <script src="configs/mercury/mercury_234_238_v67_11.config.js"></script>
     <script src="configs/mercury/mercury_204_v69_0f.config.js"></script>
-    
+
     <!-- Нева -->
     <script src="configs/neva/neva-414_v2.js"></script>
     <script src="configs/neva/neva_st413_0a.config.js"></script>
@@ -964,14 +1063,14 @@
     <script src="configs/neva/neva_sp111_09.config.js"></script>
     <script src="configs/neva/neva_sp111_rev2_08.config.js"></script>
     <script src="configs/neva/neva_mt115_04.config.js"></script>
-    
+
     <!-- СПБ-ЗИП -->
     <script src="configs/spbzip/vector_101_08.config.js"></script>
-    
+
     <!-- Нартис -->
     <script src="configs/nartis/nartis_100_08.config.js"></script>
     <script src="configs/nartis/nartis_102_09.config.js"></script>
-    
+
     <!-- ЯВНАЯ РЕГИСТРАЦИЯ КОНФИГОВ + ИНИЦИАЛИЗАЦИЯ СЕЛЕКТОВ -->
     <script>
         window.addEventListener('load', function() {
@@ -979,12 +1078,10 @@
                 // Явно регистрируем ВСЕ известные конфиги
                 const configs = [
                     window.ENERGOMERA_208_CONFIG,
-                    window.ENERGOMERA_208V6_18_CONFIG,
                     window.ENERGOMERA_207_CONFIG,
                     window.ENERGOMERA_210_03_CONFIG,
                     window.ENERGOMERA_307_CONFIG,
                     window.ENERGOMERA_308_CONFIG,
-                    window.ENERGOMERA_308V6_1C_CONFIG,
                     window.ENERGOMERA_310_07_CONFIG,
                     window.MERCURY_150_CONFIG,
                     window.MERCURY_204_208_19_CONFIG,
@@ -1007,12 +1104,12 @@
                     window.NARTIS_100_08_CONFIG,
                     window.NARTIS_102_09_CONFIG
                 ];
-                
+
                 // Инициализируем глобальное хранилище
                 if (!window.AVAILABLE_MODELS) {
                     window.AVAILABLE_MODELS = {};
                 }
-                
+
                 // Регистрируем все конфиги
                 let count = 0;
                 configs.forEach(config => {
@@ -1021,13 +1118,13 @@
                         count++;
                     }
                 });
-                
+
                 console.log('✅ Зарегистрировано моделей:', count);
-                
+
                 // ===== ИНИЦИАЛИЗИРУЕМ СЕЛЕКТЫ =====
                 const manufacturerSelect = document.getElementById('manufacturerSelectParser');
                 const modelSelect = document.getElementById('modelSelectParser');
-                
+
                 if (!manufacturerSelect || !modelSelect) {
                     console.warn('⚠️ Селекты не найдены в HTML');
                     return;
@@ -1035,7 +1132,7 @@
 
                 // Группируем модели по производителям
                 const modelsByManufacturer = {};
-                
+
                 Object.entries(window.AVAILABLE_MODELS).forEach(([modelId, config]) => {
                     const manufacturer = config.manufacturer || 'Unknown';
                     if (!modelsByManufacturer[manufacturer]) {
@@ -1059,21 +1156,21 @@
                 // Обработчик изменения производителя
                 manufacturerSelect.addEventListener('change', function() {
                     const selectedManufacturer = this.value;
-                    
+
                     // Очищаем select моделей
                     while (modelSelect.options.length > 1) {
                         modelSelect.remove(1);
                     }
-                    
+
                     if (!selectedManufacturer) {
                         modelSelect.disabled = true;
                         modelSelect.options[0].textContent = '-- Сначала выберите производителя --';
                         return;
                     }
-                    
+
                     modelSelect.disabled = false;
                     modelSelect.options[0].textContent = '-- Выберите модель --';
-                    
+
                     // Заполняем select моделей для выбранного производителя
                     modelsByManufacturer[selectedManufacturer].forEach(model => {
                         const option = document.createElement('option');
@@ -1089,6 +1186,6 @@
             }, 100);
         });
     </script>
-    
+
 </body>
 </html>

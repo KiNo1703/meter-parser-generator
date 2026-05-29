@@ -14,7 +14,7 @@ const MERCURY_204_208X_V156_157_08_CONFIG = {
     commandCode: '0066',
     minObjectId: 2,
     maxObjectId: 52,
-    bitShift: 1, // Меркурий: сдвиг = 1
+    bitShift: 0, // Меркурий: сдвиг = 1
     periodDefault: 21600, // Сутки
     
     objectGroups: [
